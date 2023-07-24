@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Domain\Atm;
 use App\Domain\ErrorMessage;
 use App\Domain\Exceptions\InUseATMException;
+use App\Domain\Exceptions\InvalidOperationDateException;
 use App\Domain\Exceptions\UnavailableATMException;
 use App\Domain\Exceptions\UnavailableValueATMException;
 use App\Domain\Exceptions\WithdrawalDuplicateATMException;
@@ -62,6 +63,22 @@ class AtmTest extends TestCase
         $this->expectException(UnavailableValueATMException::class);
         $this->expectExceptionMessage(ErrorMessage::UNAVAILABLE_VALUE->value);
         $atm->withdraw($operation);
+    }
+
+    public function testWithdrawInvalidOperationDate()
+    {
+        $atm = new Atm();
+        $atm->supply(true, 10, 20, 50, 100);
+        $operation1 = new Operation(100, "2023-07-22 12:00:00");
+        $operation2 = new Operation(100, "2023-07-22 12:30:00");
+        $operation3 = new Operation(100, "2000-07-22 10:00:00");
+
+        $atm->withdraw($operation1);
+        $atm->withdraw($operation2);
+
+        $this->expectException(InvalidOperationDateException::class);
+        $this->expectExceptionMessage(ErrorMessage::INVALID_DATE->value);
+        $atm->withdraw($operation3);
     }
 
     public function testHasDuplicateWithdrawal()

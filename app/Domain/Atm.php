@@ -1,6 +1,7 @@
 <?php
 namespace App\Domain;
 
+use App\Domain\Exceptions\InvalidOperationDateException;
 use DateTime;
 use App\Domain\Exceptions\InUseATMException;
 use App\Domain\Exceptions\UnavailableATMException;
@@ -69,6 +70,10 @@ class Atm
             throw new UnavailableValueATMException(ErrorMessage::UNAVAILABLE_VALUE->value);
         }
 
+        if (!$this->isOlderThanExistingOperations($operation->getCreatedAt())) {
+            throw new InvalidOperationDateException(ErrorMessage::INVALID_DATE->value);
+        }
+
         if ($this->hasDuplicateWithdrawal($operation->getValue(), $operation->getCreatedAt())) {
             throw new WithdrawalDuplicateATMException(ErrorMessage::WITHDRAWAL_DUPLICATE->value);
         }
@@ -130,6 +135,16 @@ class Atm
         }
 
         return false;
+    }
+
+    private function isOlderThanExistingOperations(DateTime $operationDate): bool
+    {
+        foreach ($this->operations as $existingOperation) {
+            if ($operationDate < $existingOperation->getCreatedAt()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
